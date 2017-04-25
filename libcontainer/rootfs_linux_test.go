@@ -91,3 +91,53 @@ func TestNeedsSetupDevStrangeSourceDest(t *testing.T) {
 		t.Fatal("expected needsSetupDev to be true, got false")
 	}
 }
+
+func TestDetectShiftFS(t *testing.T) {
+	procFilesystems := `nodev	sysfs
+nodev	rootfs
+nodev	ramfs
+nodev	bdev
+nodev	proc
+nodev	cpuset
+nodev	cgroup
+nodev	cgroup2
+nodev	tmpfs
+nodev	devtmpfs
+nodev	debugfs
+nodev	tracefs
+nodev	securityfs
+nodev	sockfs
+nodev	bpf
+nodev	pipefs
+nodev	hugetlbfs
+nodev	devpts
+	ext3
+	ext2
+	ext4
+	squashfs
+	vfat
+nodev	ecryptfs
+	fuseblk
+nodev	fuse
+nodev	fusectl
+nodev	pstore
+nodev	mqueue
+	btrfs
+nodev	autofs
+nodev	zfs
+nodev	binfmt_misc
+nodev	aufs
+	xfs
+	jfs
+	msdos
+	ntfs
+	minix
+	hfs
+	hfsplus
+	qnx4
+	ufs
+`
+	if !detectShiftFS(procFilesystems) {
+		t.Fatal("didn't detect shiftfs")
+	}
+}

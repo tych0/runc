@@ -91,6 +91,16 @@ func (p *setnsProcess) start() (err error) {
 	if err := setupRlimits(p.config.Rlimits, p.pid()); err != nil {
 		return newSystemErrorWithCause(err, "setting rlimits for process")
 	}
+
+	// shiftfs marking must be done by real root. there should probably be
+	// a new flag that indicates whether the fs is shifted or not.
+	if !p.config.Rootless && haveShiftFS && p.config.Config.Namespaces.Contains(configs.NEWUSER) {
+		rootfs := p.config.Config.Rootfs
+		if err := syscall.Mount(rootfs, rootfs, "shiftfs", 0, "mark"); err != nil {
+			return newSystemErrorWithCause(err, "shiftfs marking rootfs failed")
+		}
+	}
+
 	if err := utils.WriteJSON(p.parentPipe, p.config); err != nil {
 		return newSystemErrorWithCause(err, "writing config to pipe")
 	}

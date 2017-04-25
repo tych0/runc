@@ -26,6 +26,34 @@ import (
 
 const defaultMountFlags = syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
 
+var haveShiftFS bool
+
+func init() {
+	fses, err := ioutil.ReadFile("/proc/filesystems")
+	if err != nil {
+		/* print a warning? */
+		return
+	}
+
+	haveShiftFS = detectShiftFS(string(fses))
+}
+
+func detectShiftFS(fses string) bool {
+	for _, line := range strings.Split(fses, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			continue
+		}
+
+		fs := fields[len(fields)-1]
+		if fs == "shiftfs" {
+			return true
+		}
+	}
+
+	return false
+}
+
 // needsSetupDev returns true if /dev needs to be set up.
 func needsSetupDev(config *configs.Config) bool {
 	for _, m := range config.Mounts {
@@ -611,7 +639,11 @@ func prepareRoot(config *configs.Config) error {
 		return err
 	}
 
-	return syscall.Mount(config.Rootfs, config.Rootfs, "bind", syscall.MS_BIND|syscall.MS_REC, "")
+	if haveShiftFS && config.Namespaces.Contains(configs.NEWUSER) {
+		return syscall.Mount(config.Rootfs, config.Rootfs, "shiftfs", syscall.MS_REC, "")
+	} else {
+		return syscall.Mount(config.Rootfs, config.Rootfs, "bind", syscall.MS_BIND|syscall.MS_REC, "")
+	}
 }
 
 func setReadonly() error {
